@@ -91,6 +91,7 @@ func (r SubscriptionVendorPassthruResult) Extract() (*SubscriptionVendorPassthru
 }
 
 // Node represents a node in the OpenStack Bare Metal API.
+// https://docs.openstack.org/api-ref/baremetal/#id8
 type Node struct {
 	// Whether automated cleaning is enabled or disabled on this node.
 	// Requires microversion 1.47 or later.
@@ -183,15 +184,17 @@ type Node struct {
 	// Current deploy step.
 	DeployStep map[string]any `json:"deploy_step"`
 
-	// Current service step.
-	ServiceStep map[string]any `json:"service_step"`
+	// Links
+
+	// Ports
+
+	// Port Groups
+
+	// States
 
 	// String which can be used by external schedulers to identify this Node as a unit of a specific type of resource.
 	// For more details, see: https://docs.openstack.org/ironic/latest/install/configure-nova-flavors.html
 	ResourceClass string `json:"resource_class"`
-
-	// BIOS interface for a Node, e.g. “redfish”.
-	BIOSInterface string `json:"bios_interface"`
 
 	// Boot interface for a Node, e.g. “pxe”.
 	BootInterface string `json:"boot_interface"`
@@ -201,9 +204,6 @@ type Node struct {
 
 	// Deploy interface for a node, e.g. “iscsi”.
 	DeployInterface string `json:"deploy_interface"`
-
-	// Firmware interface for a node, e.g. “redfish”.
-	FirmwareInterface string `json:"firmware_interface"`
 
 	// Interface used for node inspection, e.g. “no-inspect”.
 	InspectInterface string `json:"inspect_interface"`
@@ -232,8 +232,12 @@ type Node struct {
 	// For vendor-specific functionality on this node, e.g. “no-vendor”.
 	VendorInterface string `json:"vendor_interface"`
 
+	// Volume
+
 	// Conductor group for a node. Case-insensitive string up to 255 characters, containing a-z, 0-9, _, -, and ..
 	ConductorGroup string `json:"conductor_group"`
+
+	// Parent Node
 
 	// The node is protected from undeploying, rebuilding and deletion.
 	Protected bool `json:"protected"`
@@ -241,11 +245,42 @@ type Node struct {
 	// Reason the node is marked as protected.
 	ProtectedReason string `json:"protected_reason"`
 
+	// Conductor
+
 	// A string or UUID of the tenant who owns the baremetal node.
 	Owner string `json:"owner"`
 
+	// Leesee
+
+	// shard
+
+	// desc
+
+	// allocation_uuid
+
+	// automated_clean
+
+	// BIOS interface for a Node, e.g. “redfish”.
+	BIOSInterface string `json:"bios_interface"`
+
 	// Static network configuration to use during deployment and cleaning.
 	NetworkData map[string]any `json:"network_data"`
+
+	// Whether the node is retired. A Node tagged as retired will prevent any further
+	// scheduling of instances, but will still allow for other operations, such as cleaning, to happen
+	Retired bool `json:"retired"`
+
+	// Reason the node is marked as retired.
+	RetiredReason string `json:"retired_reason"`
+
+	// NOT FOUND IN API REF
+	// ====================
+
+	// Current service step.
+	ServiceStep map[string]any `json:"service_step"`
+
+	// Firmware interface for a node, e.g. “redfish”.
+	FirmwareInterface string `json:"firmware_interface"`
 
 	// The UTC date and time when the resource was created, ISO 8601 format.
 	CreatedAt time.Time `json:"created_at"`
@@ -261,13 +296,6 @@ type Node struct {
 
 	// The UTC date and time when the last inspection was finished, ISO 8601 format. May be “null” if inspection hasn't been finished yet.
 	InspectionFinishedAt *time.Time `json:"inspection_finished_at"`
-
-	// Whether the node is retired. A Node tagged as retired will prevent any further
-	// scheduling of instances, but will still allow for other operations, such as cleaning, to happen
-	Retired bool `json:"retired"`
-
-	// Reason the node is marked as retired.
-	RetiredReason string `json:"retired_reason"`
 }
 
 // NodePage abstracts the raw results of making a List() request against
