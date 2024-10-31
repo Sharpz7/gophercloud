@@ -240,7 +240,7 @@ type Node struct {
 	VendorInterface string `json:"vendor_interface"`
 
 	// Links to the volume resources.
-	Volumes []Link `json:"volumes"`
+	Volume []Link `json:"volume"`
 
 	// Conductor group for a node. Case-insensitive string up to 255 characters, containing a-z, 0-9, _, -, and ..
 	ConductorGroup string `json:"conductor_group"`
