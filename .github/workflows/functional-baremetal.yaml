@@ -2,6 +2,7 @@ name: functional-baremetal
 on:
   merge_group:
   pull_request:
+  workflow_dispatch:
   schedule:
     - cron: '0 0 */3 * *'
 jobs:
@@ -15,14 +16,29 @@ jobs:
           - name: "master"
             openstack_version: "master"
             ubuntu_version: "24.04"
+            driver: "ipmi"
           - name: "gazpacho"
             openstack_version: "stable/2026.1"
             ubuntu_version: "24.04"
+            driver: "ipmi"
           - name: "epoxy"
             openstack_version: "stable/2025.1"
             ubuntu_version: "24.04"
+            driver: "ipmi"
+          - name: "master"
+            openstack_version: "master"
+            ubuntu_version: "24.04"
+            driver: "redfish"
+          - name: "gazpacho"
+            openstack_version: "stable/2026.1"
+            ubuntu_version: "24.04"
+            driver: "redfish"
+          - name: "epoxy"
+            openstack_version: "stable/2025.1"
+            ubuntu_version: "24.04"
+            driver: "redfish"
     runs-on: ubuntu-${{ matrix.ubuntu_version }}
-    name: Ironic on OpenStack ${{ matrix.name }}
+    name: Ironic on OpenStack ${{ matrix.name }} (${{ matrix.driver }})
     steps:
       - name: Checkout Gophercloud
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
@@ -79,9 +95,15 @@ jobs:
             API_WORKERS=1
             IRONIC_BAREMETAL_BASIC_OPS=False
             IRONIC_BUILD_DEPLOY_RAMDISK=False
-            IRONIC_AUTOMATED_CLEAN_ENABLED=False
+            IRONIC_AUTOMATED_CLEAN_ENABLED=${{ matrix.driver == 'redfish' && 'True' || 'False' }}
             IRONIC_CALLBACK_TIMEOUT=600
-            IRONIC_DEPLOY_DRIVER=ipmi
+            IRONIC_DEPLOY_DRIVER=${{ matrix.driver }}
+            IRONIC_ENABLED_HARDWARE_TYPES=${{ matrix.driver == 'redfish' && 'redfish,ipmi,fake-hardware' || 'ipmi,fake-hardware' }}
+            IRONIC_ENABLED_BOOT_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish-virtual-media,ipxe,fake' || 'ipxe,fake' }}
+            IRONIC_ENABLED_MANAGEMENT_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,ipmitool,fake' || 'ipmitool,fake' }}
+            IRONIC_ENABLED_POWER_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,ipmitool,fake' || 'ipmitool,fake' }}
+            IRONIC_ENABLED_BIOS_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,fake,no-bios' || 'fake,no-bios' }}
+            IRONIC_REDFISH_EMULATOR_FEATURE_SET=${{ matrix.driver == 'redfish' && 'full' || '' }}
             IRONIC_INSPECTOR_BUILD_RAMDISK=False
             IRONIC_RAMDISK_TYPE=tinyipa
             IRONIC_TEMPEST_BUILD_TIMEOUT=720
@@ -103,6 +125,10 @@ jobs:
           go-version-file: 'go.mod'
           cache: true
 
+      - name: Check Redfish emulator
+        if: ${{ fromJSON(steps.changed-files.outputs.matches) && matrix.driver == 'redfish' }}
+        run: curl --fail --retry 12 --retry-delay 5 http://127.0.0.1:9132/redfish/v1/
+
       - name: Run Gophercloud acceptance tests
         if: ${{ fromJSON(steps.changed-files.outputs.matches) }}
         run: |
@@ -112,6 +138,7 @@ jobs:
         env:
           DEVSTACK_PATH: ${{ github.workspace }}/devstack
           OS_BRANCH: ${{ matrix.openstack_version }}
+          OS_BAREMETAL_DRIVER: ${{ matrix.driver }}
           USE_SYSTEM_SCOPE: true
 
       - name: Generate logs on failure
@@ -122,7 +149,7 @@ jobs:
         if: ${{ failure() && fromJSON(steps.changed-files.outputs.matches) }}
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
-          name: functional-baremetal-${{ matrix.name }}-${{ github.run_id }}
+          name: functional-baremetal-${{ matrix.name }}-${{ matrix.driver }}-${{ github.run_id }}
           path: /tmp/devstack-logs/*
 
       - name: Set job status

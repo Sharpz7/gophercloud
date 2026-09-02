@@ -206,11 +206,53 @@ func TestNodesFirmwareInterface(t *testing.T) {
 	th.AssertNoErr(t, err)
 	defer DeleteNode(t, client, node)
 
+	if IsRedfish() {
+		th.AssertEquals(t, node.FirmwareInterface, "redfish")
+		return
+	}
+
 	th.AssertEquals(t, node.FirmwareInterface, "no-firmware")
 
 	nodeFirmwareCmps, err := nodes.ListFirmware(context.TODO(), client, node.UUID).Extract()
 	th.AssertNoErr(t, err)
 	th.AssertDeepEquals(t, nodeFirmwareCmps, []nodes.FirmwareComponent{})
+}
+
+func TestNodesFirmwareIdentity(t *testing.T) {
+	if !IsRedfish() {
+		t.Skip("requires the Redfish acceptance lane")
+	}
+	clients.SkipReleasesBelow(t, "master")
+	clients.RequireLong(t)
+
+	client, err := clients.NewBareMetalV1Client()
+	th.AssertNoErr(t, err)
+	client.Microversion = "1.114"
+
+	node, err := CreateNode(t, client)
+	th.AssertNoErr(t, err)
+	defer DeleteNode(t, client, node)
+
+	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Minute)
+	defer cancel()
+
+	node, err = ChangeProvisionStateAndWait(ctx, client, node, nodes.ProvisionStateOpts{
+		Target: nodes.TargetManage,
+	}, nodes.Manageable)
+	th.AssertNoErr(t, err)
+	node, err = ChangeProvisionStateAndWait(ctx, client, node, nodes.ProvisionStateOpts{
+		Target: nodes.TargetProvide,
+	}, nodes.Available)
+	th.AssertNoErr(t, err)
+
+	components, err := nodes.ListFirmware(ctx, client, node.UUID).Extract()
+	th.AssertNoErr(t, err)
+	for _, component := range components {
+		if component.Model != nil {
+			return
+		}
+	}
+	t.Fatal("Redfish firmware inventory did not include a component model")
 }
 
 func TestNodesVirtualMedia(t *testing.T) {

@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -18,22 +19,41 @@ func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (*nodes.Node, e
 	name := tools.RandomString("ACPTTEST", 16)
 	t.Logf("Attempting to create bare metal node: %s", name)
 
-	node, err := nodes.Create(context.TODO(), client, nodes.CreateOpts{
+	driver := os.Getenv("OS_BAREMETAL_DRIVER")
+	if driver == "" {
+		driver = "ipmi"
+	}
+	createOpts := nodes.CreateOpts{
 		Name:          name,
-		Driver:        "ipmi",
+		Driver:        driver,
 		BootInterface: "ipxe",
 		RAIDInterface: "agent",
-		DriverInfo: map[string]any{
+	}
+	if driver == "redfish" {
+		createOpts.BootInterface = "redfish-virtual-media"
+		createOpts.DriverInfo = map[string]any{
+			"redfish_address":   "http://127.0.0.1:9132",
+			"redfish_verify_ca": false,
+		}
+	} else {
+		createOpts.DriverInfo = map[string]any{
 			"ipmi_port":      "6230",
 			"ipmi_username":  "admin",
 			"deploy_kernel":  "http://172.22.0.1/images/tinyipa-stable-rocky.vmlinuz",
 			"ipmi_address":   "192.168.122.1",
 			"deploy_ramdisk": "http://172.22.0.1/images/tinyipa-stable-rocky.gz",
 			"ipmi_password":  "admin",
-		},
-	}).Extract()
+		}
+	}
+
+	node, err := nodes.Create(context.TODO(), client, createOpts).Extract()
 
 	return node, err
+}
+
+// IsRedfish reports whether acceptance tests are using the Redfish driver.
+func IsRedfish() bool {
+	return os.Getenv("OS_BAREMETAL_DRIVER") == "redfish"
 }
 
 // DeleteNode deletes a bare metal node via its UUID.

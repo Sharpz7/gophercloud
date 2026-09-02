@@ -114,6 +114,11 @@ func TestNodesFirmwareInterface(t *testing.T) {
 	th.AssertNoErr(t, err)
 	defer v1.DeleteNode(t, client, node)
 
+	if v1.IsRedfish() {
+		th.AssertEquals(t, node.FirmwareInterface, "redfish")
+		return
+	}
+
 	th.AssertEquals(t, node.FirmwareInterface, "no-firmware")
 
 	nodeFirmwareCmps, err := nodes.ListFirmware(context.TODO(), client, node.UUID).Extract()
