@@ -131,6 +131,8 @@ jobs:
           source ${{ github.workspace }}/script/stackenv
           curl --fail --retry 12 --retry-delay 5 "http://${HOST_IP}:9132/redfish/v1/"
           echo "OS_BAREMETAL_REDFISH_ADDRESS=http://${HOST_IP}:9132" >> "$GITHUB_ENV"
+        env:
+          DEVSTACK_PATH: ${{ github.workspace }}/devstack
 
       - name: Run Gophercloud acceptance tests
         if: ${{ github.event_name == 'workflow_dispatch' || fromJSON(steps.changed-files.outputs.matches) }}
