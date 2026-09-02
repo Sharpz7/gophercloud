@@ -57,7 +57,7 @@ func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (*nodes.Node, e
 
 	node, err = nodes.Update(context.TODO(), client, node.UUID, nodes.UpdateOpts{
 		nodes.UpdateOperation{
-			Op:    nodes.ReplaceOp,
+			Op:    nodes.AddOp,
 			Path:  "/driver_info/redfish_system_id",
 			Value: "/redfish/v1/Systems/" + node.UUID,
 		},
