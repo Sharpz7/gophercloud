@@ -35,6 +35,7 @@ func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (*nodes.Node, e
 			redfishAddress = "http://127.0.0.1:9132"
 		}
 		createOpts.BootInterface = "redfish-virtual-media"
+		createOpts.FirmwareInterface = "redfish"
 		createOpts.DriverInfo = map[string]any{
 			"redfish_address":   redfishAddress,
 			"redfish_verify_ca": false,
@@ -51,6 +52,17 @@ func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (*nodes.Node, e
 	}
 
 	node, err := nodes.Create(context.TODO(), client, createOpts).Extract()
+	if err != nil || driver != "redfish" {
+		return node, err
+	}
+
+	node, err = nodes.Update(context.TODO(), client, node.UUID, nodes.UpdateOpts{
+		nodes.UpdateOperation{
+			Op:    nodes.ReplaceOp,
+			Path:  "/driver_info/redfish_system_id",
+			Value: "/redfish/v1/Systems/" + node.UUID,
+		},
+	}).Extract()
 
 	return node, err
 }
