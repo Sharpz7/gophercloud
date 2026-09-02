@@ -127,7 +127,10 @@ jobs:
 
       - name: Check Redfish emulator
         if: ${{ (github.event_name == 'workflow_dispatch' || fromJSON(steps.changed-files.outputs.matches)) && matrix.driver == 'redfish' }}
-        run: curl --fail --retry 12 --retry-delay 5 http://127.0.0.1:9132/redfish/v1/
+        run: |
+          source ${{ github.workspace }}/script/stackenv
+          curl --fail --retry 12 --retry-delay 5 "http://${HOST_IP}:9132/redfish/v1/"
+          echo "OS_BAREMETAL_REDFISH_ADDRESS=http://${HOST_IP}:9132" >> "$GITHUB_ENV"
 
       - name: Run Gophercloud acceptance tests
         if: ${{ github.event_name == 'workflow_dispatch' || fromJSON(steps.changed-files.outputs.matches) }}

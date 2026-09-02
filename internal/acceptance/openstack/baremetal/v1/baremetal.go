@@ -30,9 +30,13 @@ func CreateNode(t *testing.T, client *gophercloud.ServiceClient) (*nodes.Node, e
 		RAIDInterface: "agent",
 	}
 	if driver == "redfish" {
+		redfishAddress := os.Getenv("OS_BAREMETAL_REDFISH_ADDRESS")
+		if redfishAddress == "" {
+			redfishAddress = "http://127.0.0.1:9132"
+		}
 		createOpts.BootInterface = "redfish-virtual-media"
 		createOpts.DriverInfo = map[string]any{
-			"redfish_address":   "http://127.0.0.1:9132",
+			"redfish_address":   redfishAddress,
 			"redfish_verify_ca": false,
 		}
 	} else {
