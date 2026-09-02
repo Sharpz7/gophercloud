@@ -103,7 +103,7 @@ jobs:
             IRONIC_ENABLED_MANAGEMENT_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,ipmitool,fake' || 'ipmitool,fake' }}
             IRONIC_ENABLED_POWER_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,ipmitool,fake' || 'ipmitool,fake' }}
             IRONIC_ENABLED_BIOS_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,fake,no-bios' || 'fake,no-bios' }}
-            IRONIC_ENABLED_FIRMWARE_INTERFACES=${{ matrix.driver == 'redfish' && 'redfish,no-firmware' || 'no-firmware' }}
+            IRONIC_ENABLED_FIRMWARE_INTERFACES=${{ matrix.name == 'master' && matrix.driver == 'redfish' && 'redfish,no-firmware' || 'no-firmware' }}
             IRONIC_REDFISH_EMULATOR_FEATURE_SET=${{ matrix.driver == 'redfish' && 'full' || '' }}
             IRONIC_INSPECTOR_BUILD_RAMDISK=False
             IRONIC_RAMDISK_TYPE=tinyipa

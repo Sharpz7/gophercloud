@@ -197,6 +197,9 @@ func TestNodesRAIDConfig(t *testing.T) {
 func TestNodesFirmwareInterface(t *testing.T) {
 	clients.SkipReleasesBelow(t, "stable/2023.2")
 	clients.RequireLong(t)
+	if IsRedfish() {
+		clients.SkipReleasesBelow(t, "master")
+	}
 
 	client, err := clients.NewBareMetalV1Client()
 	th.AssertNoErr(t, err)
@@ -207,6 +210,14 @@ func TestNodesFirmwareInterface(t *testing.T) {
 	defer DeleteNode(t, client, node)
 
 	if IsRedfish() {
+		node, err = nodes.Update(context.TODO(), client, node.UUID, nodes.UpdateOpts{
+			nodes.UpdateOperation{
+				Op:    nodes.ReplaceOp,
+				Path:  "/firmware_interface",
+				Value: "redfish",
+			},
+		}).Extract()
+		th.AssertNoErr(t, err)
 		th.AssertEquals(t, node.FirmwareInterface, "redfish")
 		return
 	}
@@ -232,6 +243,15 @@ func TestNodesFirmwareIdentity(t *testing.T) {
 	node, err := CreateNode(t, client)
 	th.AssertNoErr(t, err)
 	defer DeleteNode(t, client, node)
+
+	node, err = nodes.Update(context.TODO(), client, node.UUID, nodes.UpdateOpts{
+		nodes.UpdateOperation{
+			Op:    nodes.ReplaceOp,
+			Path:  "/firmware_interface",
+			Value: "redfish",
+		},
+	}).Extract()
+	th.AssertNoErr(t, err)
 
 	ctx, cancel := context.WithTimeout(context.TODO(), 10*time.Minute)
 	defer cancel()
